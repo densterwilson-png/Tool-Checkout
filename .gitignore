@@ -1,0 +1,10 @@
+target/
+database/*.db
+*.db
+
+*.class
+
+.idea/
+.vscode/
+
+nbproject/private/
