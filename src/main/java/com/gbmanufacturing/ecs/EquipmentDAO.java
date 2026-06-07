@@ -1,12 +1,13 @@
 package com.gbmanufacturing.ecs;
 
 import com.gbmanufacturing.ecs.database.DatabaseManager;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.Instant;
 
 public class EquipmentDAO {
 
@@ -19,6 +20,53 @@ public class EquipmentDAO {
             }
         }
         return list;
+    }
+
+    public List<Equipment> searchEquipment(String keyword) throws Exception {
+        List<Equipment> list = new ArrayList<>();
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, equipment_name, availability_status, checkedOutBy, checkedOutAt FROM equipment WHERE equipment_name LIKE ? OR equipment_type LIKE ? ORDER BY id")) {
+            String pattern = "%" + keyword + "%";
+            ps.setString(1, pattern);
+            ps.setString(2, pattern);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new Equipment(rs.getInt("id"), rs.getString("equipment_name"), rs.getString("availability_status"), rs.getString("checkedOutBy"), rs.getString("checkedOutAt")));
+            }
+        }
+        return list;
+    }
+
+    public List<Equipment> searchEquipmentByStatus(String status) throws Exception {
+        List<Equipment> list = new ArrayList<>();
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT id, equipment_name, availability_status, checkedOutBy, checkedOutAt FROM equipment WHERE availability_status=? ORDER BY id")) {
+            ps.setString(1, status);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new Equipment(rs.getInt("id"), rs.getString("equipment_name"), rs.getString("availability_status"), rs.getString("checkedOutBy"), rs.getString("checkedOutAt")));
+            }
+        }
+        return list;
+    }
+
+    public int getTotalEquipmentCount() throws Exception {
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM equipment")) {
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    public int getAvailableEquipmentCount() throws Exception {
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM equipment WHERE availability_status='available'")) {
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    public int getCheckedOutEquipmentCount() throws Exception {
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM equipment WHERE availability_status='checked_out'")) {
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        }
     }
 
     public boolean checkout(int id, String user) throws Exception {
@@ -40,22 +88,31 @@ public class EquipmentDAO {
 
     public boolean addEquipment(String name) throws Exception {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("Equipment name cannot be empty");
-        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO equipment(equipment_name, equipment_type, condition_status, availability_status) VALUES(?, 'General', 'Good', 'available')")){
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("INSERT INTO equipment(equipment_name, equipment_type, condition_status, availability_status) VALUES(?, 'General', 'Good', 'available')")) {
             ps.setString(1, name.trim());
             return ps.executeUpdate() == 1;
         }
     }
 
     public boolean deleteEquipment(int id) throws Exception {
-        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("DELETE FROM equipment WHERE id=?")){
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("DELETE FROM equipment WHERE id=?")) {
             ps.setInt(1, id);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    public boolean updateEquipmentStatus(int id, String status) throws Exception {
+        if (status == null || status.isBlank()) throw new IllegalArgumentException("Status cannot be empty");
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("UPDATE equipment SET availability_status=? WHERE id=?")) {
+            ps.setString(1, status.trim());
+            ps.setInt(2, id);
             return ps.executeUpdate() == 1;
         }
     }
 
     public List<String> getUsageReport() throws Exception {
         List<String> out = new ArrayList<>();
-        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT equipment_name, COUNT(*) as totalCheckouts FROM equipment WHERE checkedOutAt IS NOT NULL GROUP BY equipment_name")){
+        try (Connection c = DatabaseManager.getConnection(); PreparedStatement ps = c.prepareStatement("SELECT e.equipment_name, COUNT(t.id) as totalCheckouts FROM equipment_transactions t JOIN equipment e ON e.id = t.equipment_id GROUP BY e.equipment_name")) {
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 out.add(rs.getString("equipment_name") + ": " + rs.getInt("totalCheckouts") + " checkouts");
