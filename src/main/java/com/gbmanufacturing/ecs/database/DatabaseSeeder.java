@@ -1,4 +1,3 @@
-
 package com.gbmanufacturing.ecs.database;
 
 /** ********************************************************
@@ -154,14 +153,8 @@ public class DatabaseSeeder {
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            // Mike Johnson is forklift certified.
             addCertification(pstmt, 3, "FORKLIFT");
-
-            // David Lee is welding certified.
             addCertification(pstmt, 5, "WELDING");
-
-            // Thomas Brown is both forklift and welding certified.
-            // He is also a supervisor, but supervisor status alone does not grant certification.
             addCertification(pstmt, 7, "FORKLIFT");
             addCertification(pstmt, 7, "WELDING");
 

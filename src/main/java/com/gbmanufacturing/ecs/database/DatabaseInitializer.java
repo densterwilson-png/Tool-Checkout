@@ -1,99 +1,32 @@
 package com.gbmanufacturing.ecs.database;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
 
-/** ********************************************************
- * Program Name: DatabaseInitializer.java
- * Programmer's Name: Robert Sadler
- * Group: Group 4
- * Program Description: Creates the SQLite database tables needed
- * for the Equipment Checkout System.
- ********************************************************** */
-
 public class DatabaseInitializer {
+    private static final String DB_DIR = "database";
 
-    private DatabaseInitializer() {
-        // Prevent instantiation.
-    }
-
-    public static void initializeDatabase() {
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            createUsersTable(stmt);
-            createEquipmentTable(stmt);
-            createUserCertificationsTable(stmt);
-            createCheckoutRecordsTable(stmt);
-
-            DatabaseSeeder.seedDatabase(conn);
-
-            System.out.println("Database initialized successfully.");
-
-        } catch (SQLException e) {
-            System.out.println("Database initialization error: " + e.getMessage());
+    public static void init() throws Exception {
+        ensureDataDirectoryExists();
+        try (Connection connection = DatabaseManager.getConnection(); Statement statement = connection.createStatement()) {
+            createSchema(statement);
+            DatabaseSeeder.seedDatabase(connection);
         }
     }
 
-    private static void createUsersTable(Statement stmt) throws SQLException {
-        String sql = """
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL UNIQUE,
-                    password TEXT NOT NULL,
-                    first_name TEXT NOT NULL,
-                    last_name TEXT NOT NULL,
-                    role TEXT NOT NULL
-                )
-                """;
-
-        stmt.execute(sql);
+    private static void ensureDataDirectoryExists() throws Exception {
+        Path dir = Path.of(DB_DIR);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
     }
 
-    private static void createEquipmentTable(Statement stmt) throws SQLException {
-        String sql = """
-                CREATE TABLE IF NOT EXISTS equipment (
-                    equipment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    equipment_name TEXT NOT NULL,
-                    equipment_type TEXT NOT NULL,
-                    condition_status TEXT NOT NULL,
-                    availability_status TEXT NOT NULL,
-                    required_certification TEXT
-                )
-                """;
-
-        stmt.execute(sql);
-    }
-
-    private static void createUserCertificationsTable(Statement stmt) throws SQLException {
-        String sql = """
-                CREATE TABLE IF NOT EXISTS user_certifications (
-                    certification_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    certification_type TEXT NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users(user_id)
-                )
-                """;
-
-        stmt.execute(sql);
-    }
-
-    private static void createCheckoutRecordsTable(Statement stmt) throws SQLException {
-        String sql = """
-                CREATE TABLE IF NOT EXISTS checkout_records (
-                    checkout_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    equipment_id INTEGER NOT NULL,
-                    checkout_date TEXT NOT NULL,
-                    due_date TEXT,
-                    return_date TEXT,
-                    status TEXT NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users(user_id),
-                    FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
-                )
-                """;
-
-        stmt.execute(sql);
+    private static void createSchema(Statement statement) throws Exception {
+        statement.execute("CREATE TABLE IF NOT EXISTS tools (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, status TEXT NOT NULL, checkedOutBy TEXT, checkedOutAt TEXT)");
+        statement.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, first_name TEXT, last_name TEXT, role TEXT NOT NULL)");
+        statement.execute("CREATE TABLE IF NOT EXISTS equipment (id INTEGER PRIMARY KEY AUTOINCREMENT, equipment_name TEXT NOT NULL, equipment_type TEXT NOT NULL, condition_status TEXT NOT NULL, availability_status TEXT NOT NULL, required_certification TEXT)");
+        statement.execute("CREATE TABLE IF NOT EXISTS user_certifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, certification_type TEXT NOT NULL)");
     }
 }
