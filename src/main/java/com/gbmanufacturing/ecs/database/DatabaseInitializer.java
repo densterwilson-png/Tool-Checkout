@@ -24,9 +24,27 @@ public class DatabaseInitializer {
     }
 
     private static void createSchema(Statement statement) throws Exception {
-        statement.execute("CREATE TABLE IF NOT EXISTS tools (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, status TEXT NOT NULL, checkedOutBy TEXT, checkedOutAt TEXT)");
-        statement.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, first_name TEXT, last_name TEXT, role TEXT NOT NULL)");
-        statement.execute("CREATE TABLE IF NOT EXISTS equipment (id INTEGER PRIMARY KEY AUTOINCREMENT, equipment_name TEXT NOT NULL, equipment_type TEXT NOT NULL, condition_status TEXT NOT NULL, availability_status TEXT NOT NULL, required_certification TEXT)");
-        statement.execute("CREATE TABLE IF NOT EXISTS user_certifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, certification_type TEXT NOT NULL)");
+        statement.execute(
+            "CREATE TABLE IF NOT EXISTS equipment (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "equipment_name TEXT NOT NULL, " +
+            "equipment_type TEXT NOT NULL, " +
+            "condition_status TEXT NOT NULL, " +
+            "availability_status TEXT NOT NULL, " +
+            "required_certification TEXT, " +
+            "checkedOutBy TEXT, " +
+            "checkedOutAt TEXT" +
+            ")"
+        );
+        statement.execute(
+            "CREATE TABLE IF NOT EXISTS users (" +
+            "user_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "username TEXT NOT NULL UNIQUE, " +
+            "password TEXT NOT NULL, " +
+            "first_name TEXT NOT NULL, " +
+            "last_name TEXT NOT NULL, " +
+            "role TEXT NOT NULL" +
+            ")"
+        );
     }
 }

@@ -1,13 +1,5 @@
 package com.gbmanufacturing.ecs.database;
 
-/** ********************************************************
- * Program Name: DatabaseSeeder.java
- * Programmer's Name: Robert Sadler
- * Group: Group 4
- * Program Description: Seeds the Equipment Checkout System database
- * with sample users, equipment, and user certifications.
- ********************************************************** */
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,31 +31,27 @@ public class DatabaseSeeder {
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
-            }
+            return rs.next() && rs.getInt(1) > 0;
         }
-
-        return false;
     }
 
+    // ---------------- USERS ----------------
     private static void seedUsers(Connection conn) throws SQLException {
-        String sql = """
-                INSERT INTO users
-                (username, password, first_name, last_name, role)
-                VALUES (?, ?, ?, ?, ?)
-                """;
+
+        String sql =
+            "INSERT INTO users (username, password, first_name, last_name, role) " +
+            "VALUES (?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            addUser(pstmt, "jsmith", "password123", "John", "Smith", "Employee");
-            addUser(pstmt, "agarcia", "password123", "Ana", "Garcia", "Employee");
-            addUser(pstmt, "mjohnson", "password123", "Mike", "Johnson", "Employee");
-            addUser(pstmt, "kwilliams", "password123", "Karen", "Williams", "Employee");
-            addUser(pstmt, "dlee", "password123", "David", "Lee", "Employee");
+            addUser(pstmt, "jsmith", "password123", "John", "Smith", "EMPLOYEE");
+            addUser(pstmt, "agarcia", "password123", "Ana", "Garcia", "EMPLOYEE");
+            addUser(pstmt, "mjohnson", "password123", "Mike", "Johnson", "EMPLOYEE");
+            addUser(pstmt, "kwilliams", "password123", "Karen", "Williams", "EMPLOYEE");
+            addUser(pstmt, "dlee", "password123", "David", "Lee", "EMPLOYEE");
 
-            addUser(pstmt, "sroberts", "admin123", "Sarah", "Roberts", "Supervisor");
-            addUser(pstmt, "tbrown", "admin123", "Thomas", "Brown", "Supervisor");
+            addUser(pstmt, "sroberts", "admin123", "Sarah", "Roberts", "SUPERVISOR");
+            addUser(pstmt, "tbrown", "admin123", "Thomas", "Brown", "SUPERVISOR");
 
             pstmt.executeBatch();
         }
@@ -86,36 +74,24 @@ public class DatabaseSeeder {
         pstmt.addBatch();
     }
 
+    // ---------------- EQUIPMENT ----------------
     private static void seedEquipment(Connection conn) throws SQLException {
-        String sql = """
-                INSERT INTO equipment
-                (equipment_name, equipment_type, condition_status,
-                 availability_status, required_certification)
-                VALUES (?, ?, ?, ?, ?)
-                """;
+
+        String sql =
+            "INSERT INTO equipment " +
+            "(equipment_name, equipment_type, condition_status, availability_status, required_certification) " +
+            "VALUES (?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            addEquipment(pstmt, "Cordless Drill", "Power Tool",
-                    "Good", "Available", null);
+            addEquipment(pstmt, "Cordless Drill", "Power Tool", "Good", "available", null);
+            addEquipment(pstmt, "Circular Saw", "Power Tool", "Good", "available", null);
+            addEquipment(pstmt, "Socket Set", "Hand Tool", "Excellent", "available", null);
+            addEquipment(pstmt, "Ladder", "Safety Equipment", "Fair", "available", null);
+            addEquipment(pstmt, "Pressure Washer", "Cleaning Equipment", "Maintenance Required", "unavailable", null);
 
-            addEquipment(pstmt, "Circular Saw", "Power Tool",
-                    "Good", "Available", null);
-
-            addEquipment(pstmt, "Socket Set", "Hand Tool",
-                    "Excellent", "Available", null);
-
-            addEquipment(pstmt, "Ladder", "Safety Equipment",
-                    "Fair", "Available", null);
-
-            addEquipment(pstmt, "Pressure Washer", "Cleaning Equipment",
-                    "Maintenance Required", "Unavailable", null);
-
-            addEquipment(pstmt, "Forklift Key", "Vehicle Access",
-                    "Good", "Available", "FORKLIFT");
-
-            addEquipment(pstmt, "Welding Kit", "Specialized Tool",
-                    "Good", "Available", "WELDING");
+            addEquipment(pstmt, "Forklift Key", "Vehicle Access", "Good", "available", "FORKLIFT");
+            addEquipment(pstmt, "Welding Kit", "Specialized Tool", "Good", "available", "WELDING");
 
             pstmt.executeBatch();
         }
@@ -123,40 +99,40 @@ public class DatabaseSeeder {
 
     private static void addEquipment(
             PreparedStatement pstmt,
-            String equipmentName,
-            String equipmentType,
-            String conditionStatus,
-            String availabilityStatus,
-            String requiredCertification
+            String name,
+            String type,
+            String condition,
+            String availability,
+            String cert
     ) throws SQLException {
 
-        pstmt.setString(1, equipmentName);
-        pstmt.setString(2, equipmentType);
-        pstmt.setString(3, conditionStatus);
-        pstmt.setString(4, availabilityStatus);
+        pstmt.setString(1, name);
+        pstmt.setString(2, type);
+        pstmt.setString(3, condition);
+        pstmt.setString(4, availability);
 
-        if (requiredCertification == null) {
+        if (cert == null) {
             pstmt.setNull(5, java.sql.Types.VARCHAR);
         } else {
-            pstmt.setString(5, requiredCertification);
+            pstmt.setString(5, cert);
         }
 
         pstmt.addBatch();
     }
 
+    // ---------------- CERTIFICATIONS ----------------
     private static void seedCertifications(Connection conn) throws SQLException {
-        String sql = """
-                INSERT INTO user_certifications
-                (user_id, certification_type)
-                VALUES (?, ?)
-                """;
+
+        String sql =
+            "INSERT INTO user_certifications (user_id, certification_type) " +
+            "VALUES (?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            addCertification(pstmt, 3, "FORKLIFT");
-            addCertification(pstmt, 5, "WELDING");
-            addCertification(pstmt, 7, "FORKLIFT");
+            addCertification(pstmt, 6, "FORKLIFT");
             addCertification(pstmt, 7, "WELDING");
+            addCertification(pstmt, 7, "FORKLIFT");
+            addCertification(pstmt, 6, "WELDING");
 
             pstmt.executeBatch();
         }
@@ -165,11 +141,11 @@ public class DatabaseSeeder {
     private static void addCertification(
             PreparedStatement pstmt,
             int userId,
-            String certificationType
+            String type
     ) throws SQLException {
 
         pstmt.setInt(1, userId);
-        pstmt.setString(2, certificationType);
+        pstmt.setString(2, type);
         pstmt.addBatch();
     }
 }
